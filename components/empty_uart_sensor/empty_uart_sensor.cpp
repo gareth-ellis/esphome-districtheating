@@ -43,6 +43,7 @@ void EmptyUARTSensor::update() {
     this->publish_state(this->parsed_value_);  // Publish the parsed value as a sensor state
   } else {
     ESP_LOGW(TAG, "No data received");
+    this->publish_state(123.456);
     this->status_set_warning();  // We can indicate a warning if no data was read
   }
 }
