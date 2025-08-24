@@ -4,7 +4,7 @@
 namespace esphome {
 namespace fv_sensor {
 
-static const char *TAG = "fv_sensor";
+static const char *TAG = "fv_sensor.sensor";
 
 void FVSensor::setup() {
   // Serial.begin(115200);
