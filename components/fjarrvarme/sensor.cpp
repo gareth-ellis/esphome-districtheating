@@ -1,6 +1,5 @@
 #include "esphome/core/log.h"
 #include "sensor.h"
-#include "obis.h"  // Include the header where OBISData is defined
 #define BUF_SIZE 2500
 #define WAIT_TIME 1
 
@@ -18,6 +17,12 @@ namespace esphome {
 namespace fjarrvarme {
 
 static const char *TAG = "fjarrvarme.sensor";
+
+class ParsedMessage {
+  public:
+    double cumulativeActiveImport;
+    double cumulativeVolume;
+};
 
 void FVSensor::setup() {
   // Serial.begin(115200);
@@ -40,11 +45,9 @@ void FVSensor::loop() {
 
 }
 
-void FVSensor::publishSensors(const OBISData *data, int count) {
-  for (int i = 0; i < count; i++) {
-    // Publish each sensor reading
-    ESP_LOGI(TAG, "Publishing sensor %d: %s", i, data[i].value);
-  }
+void FVSensor::publishSensors(ParsedMessage* parsed) {
+  ESP_LOGI(TAG, "Publishing sensor: 6.8 = %f", parsed->cumulativeActiveImport);
+  ESP_LOGI(TAG, "Publishing sensor: 6.26 = %f", parsed->cumulativeVolume);
 }
 
 void FVSensor::dump_config(){
@@ -58,33 +61,87 @@ void FVSensor::sendDataCmd() {
   ESP_LOGI("cmd", "data cmd sent");
 }
 
+
+
+ char* strtok_single (char * str, char const * delims) {
+      static char  * src = NULL;
+      char  *  p,  * ret = 0;
+      if (str != NULL)
+        src = str;
+      if (src == NULL)
+        return NULL;
+      if ((p = strpbrk (src, delims)) != NULL) {
+        *p  = 0;
+        ret = src;
+        src = ++p;
+      } else if (*src) {
+        ret = src;
+        src = NULL;
+      }
+      return ret;
+    }
+
+    void parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
+      if (strncmp(obis_code, "6.8", 6) == 0) {
+        parsed->cumulativeActiveImport = atof(value) * 1000;
+
+      } else if (strncmp(obis_code, "6.26", 6) == 0) {
+        parsed->cumulativeVolume = atof(value);
+
+      }
+    }
+
+
 void FVSensor::readTelegram() {
 
-  OBISData obisdata[MAX_OBIS_CODES];
-  
-  bool publish=false;
-  // fast forward until we find the STX byte (start-of-text)
-  uint8_t b = 0x00;
-  while (this->available() && b != 0x02) {
-    b = this->read();
-  }
+  ParsedMessage parsed = ParsedMessage();
+  ParsedMessage parsed = ParsedMessage();
+      
+      bool publish=false;
+      // fast forward until we find the STX byte (start-of-text)
+      uint8_t b = 0x00;
+      while (available() && b != 0x02) {
+        b = read();
+      }
 
-  while (int len = this->available()) {
-    ESP_LOGD("readTelegram", "Got %d bytes available to read", len);
-    if (!this->read_array((uint8_t *) buffer, len))
-            ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
-    ESP_LOGD("readTelegram", "Read %s", buffer);
+      while (int len = available()) {
+        ESP_LOGD("readTelegram", "Got %d bytes available to read", len);
+        if (!read_array((uint8_t *) buffer, len))
+               ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
+        ESP_LOGD("readTelegram", "Read %s", buffer);
 
-    int count;
-    parse_obis(buffer, obisdata, &count);
-    print_parsed_data(obisdata, count);
-    publishSensors(obisdata, count);
+        if (len > 0) {
+          // end character reached
+          if (buffer[0] == '!') {
+            publishSensors(&parsed);
+            return;
+          }
 
-    // clean buffer
-    memset(buffer, 0, BUF_SIZE - 1);
+          char* obis_code = strtok_single(buffer, "(");
+          while (obis_code != NULL) {
+            char* value = strtok_single(NULL, "*)");
+            char* unit = strtok_single(NULL, "*)");
+            
+            if (value != NULL) {
+              //ESP_LOGI("data", "%s=[%s]", obis_code, value);
+              parseRow(&parsed, obis_code, value);
+              publish=true;
+            }
+            obis_code = strtok_single(NULL, "(");
+          }
+         
+        }
 
-  }
-}
+        // clean buffer
+        memset(buffer, 0, BUF_SIZE - 1);
+
+      }
+
+      if (publish == true) {
+        ESP_LOGD("readTelegram", "Publishing sensor data");
+        publishSensors(&parsed);
+      }
+    }
 
 }  // namespace fjarrvarme
 }  // namespace esphome

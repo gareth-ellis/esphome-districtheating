@@ -12,9 +12,10 @@ class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UA
   void setup() override;
   void update() override;
   void loop() override;
-  void publishSensors();
+  void publishSensors(ParsedMessage *parsed);
   void dump_config() override;
   void sendDataCmd();
+  void parse_obis(char *str, char const *delimiters);
   void readTelegram();
 };
 
