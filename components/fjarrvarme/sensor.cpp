@@ -95,7 +95,6 @@ void FVSensor::sendDataCmd() {
 void FVSensor::readTelegram() {
 
   ParsedMessage parsed = ParsedMessage();
-  ParsedMessage parsed = ParsedMessage();
       
       bool publish=false;
       // fast forward until we find the STX byte (start-of-text)
