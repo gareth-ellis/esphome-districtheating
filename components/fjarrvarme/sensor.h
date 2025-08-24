@@ -7,6 +7,8 @@
 namespace esphome {
 namespace fjarrvarme {
 
+class ParsedMessage;
+
 class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UARTDevice {
  public:
   void setup() override;
@@ -17,6 +19,7 @@ class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UA
   void sendDataCmd();
   void parse_obis(char *str, char const *delimiters);
   void readTelegram();
+
 };
 
 }  // namespace fjarrvarme
