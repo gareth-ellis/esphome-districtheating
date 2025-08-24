@@ -36,6 +36,8 @@ void EmptyUARTSensor::update() {
   while (this->available() && buffer_pos < MAX_LINE_LENGTH && this->read_byte(&this->buffer_data_[buffer_pos++])) {
   }
 
+  ESP_LOGW(TAG, "Here's a message");
+
   if (buffer_pos > 0) {
     this->parse_data();  // If we have read some data, parse it
     this->publish_state(this->parsed_value_);  // Publish the parsed value as a sensor state
