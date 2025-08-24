@@ -1,6 +1,6 @@
 #include "esphome/core/log.h"
 #include "sensor.h"
-
+#include "obis.h"  // Include the header where OBISData is defined
 #define BUF_SIZE 2500
 #define WAIT_TIME 1
 
