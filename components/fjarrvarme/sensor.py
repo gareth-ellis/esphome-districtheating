@@ -14,21 +14,23 @@ empty_uart_sensor_ns = cg.esphome_ns.namespace("fv_sensor")
 FVSensor = empty_uart_sensor_ns.class_("FVSensor", cg.PollingComponent, uart.UARTDevice)
 
 
-CONFIG_SCHEMA = cv.Schema(
-    {
-        cv.GenerateID(): cv.declare_id(FVSensor),
-        cv.Optional("heating_cumulative_active_import"): sensor.sensor_schema(
-            unit_of_measurement=UNIT_KILOWATT_HOURS,
-            accuracy_decimals=2,
-            device_class=DEVICE_CLASS_ENERGY,
-            state_class=STATE_CLASS_TOTAL_INCREASING,
-        ),
-        cv.Optional("heating_cumulative_volume"): sensor.sensor_schema(
-            unit_of_measurement=UNIT_CUBIC_METER, accuracy_decimals=6
-        ),
-    }
+CONFIG_SCHEMA = (
+    sensor.sensor_schema(
+        {
+            cv.GenerateID(): cv.declare_id(FVSensor),
+            cv.Optional("heating_cumulative_active_import"): sensor.sensor_schema(
+                unit_of_measurement=UNIT_KILOWATT_HOURS,
+                accuracy_decimals=2,
+                device_class=DEVICE_CLASS_ENERGY,
+                state_class=STATE_CLASS_TOTAL_INCREASING,
+            ),
+            cv.Optional("heating_cumulative_volume"): sensor.sensor_schema(
+                unit_of_measurement=UNIT_CUBIC_METER, accuracy_decimals=6
+            ),
+        }
+    ).extend(cv.polling_component_schema("60s"))
+    .extend(uart.UART_DEVICE_SCHEMA)
 )
-
 
 async def to_code(config):
     var = await sensor.new_sensor(config)
