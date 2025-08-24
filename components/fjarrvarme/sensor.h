@@ -12,7 +12,10 @@ class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UA
   void setup() override;
   void update() override;
   void loop() override;
+  void publishSensors(const OBISData *data, int count);
   void dump_config() override;
+  void sendDataCmd();
+  void readTelegram();
 };
 
 }  // namespace fjarrvarme
