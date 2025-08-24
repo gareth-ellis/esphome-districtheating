@@ -2,9 +2,9 @@
 #include "sensor.h"
 
 namespace esphome {
-namespace fv_sensor {
+namespace fjarrvarme {
 
-static const char *TAG = "fv_sensor.sensor";
+static const char *TAG = "fjarrvarme.sensor";
 
 void FVSensor::setup() {
   // Serial.begin(115200);
@@ -37,5 +37,5 @@ void FVSensor::dump_config(){
     ESP_LOGCONFIG(TAG, "Fjärrvärmesensor");
 }
 
-}  // namespace fv_sensor
+}  // namespace fjarrvarme
 }  // namespace esphome

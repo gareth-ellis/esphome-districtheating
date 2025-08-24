@@ -5,7 +5,7 @@
 #include "esphome/components/uart/uart.h"
 
 namespace esphome {
-namespace fv_sensor {
+namespace fjarrvarme {
 
 class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UARTDevice {
  public:
@@ -15,5 +15,5 @@ class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UA
   void dump_config() override;
 };
 
-}  // namespace fv_sensor
+}  // namespace fjarrvarme
 }  // namespace esphome

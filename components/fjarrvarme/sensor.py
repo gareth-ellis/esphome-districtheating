@@ -10,8 +10,8 @@ from esphome.const import (
 
 DEPENDENCIES = ["uart"]
 
-fv_sensor_ns = cg.esphome_ns.namespace("fv_sensor")
-FVSensor = fv_sensor_ns.class_("FVSensor", cg.PollingComponent, uart.UARTDevice)
+fjarrvarme_ns = cg.esphome_ns.namespace("fjarrvarme")
+FVSensor = fjarrvarme_ns.class_("FVSensor", cg.PollingComponent, uart.UARTDevice)
 
 
 CONFIG_SCHEMA = (
