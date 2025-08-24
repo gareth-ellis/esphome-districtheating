@@ -15,11 +15,6 @@ void FVSensor::setup() {
 }
 
 void FVSensor::update() {
-
-
-}
-
-void FVSensor::loop() {
   char response[] = "12345678910";
   if (sizeof(response) > 10) {
     
@@ -31,6 +26,11 @@ void FVSensor::loop() {
   } else {
     ESP_LOGW(TAG, "UH50: No valid response received");
   }
+
+}
+
+void FVSensor::loop() {
+
 }
 
 void FVSensor::dump_config(){
