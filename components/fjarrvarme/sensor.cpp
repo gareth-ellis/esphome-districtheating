@@ -37,6 +37,7 @@ void FVSensor::update() {
         sendDataCmd();
         readTelegram();
         timeLastRun = millis();
+        ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
     }
 
 }
