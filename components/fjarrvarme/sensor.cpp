@@ -1,6 +1,6 @@
 #include "esphome/core/log.h"
 #include "sensor.h"
-#define BUF_SIZE 2500
+#define BUF_SIZE 100
 #define WAIT_TIME 1
 
 uint8_t data_cmd[] = { 
@@ -103,11 +103,14 @@ void FVSensor::readTelegram() {
       bool publish=false;
       // fast forward until we find the STX byte (start-of-text)
       uint8_t b = 0x00;
+      int i=0;
       while (this->available() && b != 0x02) {
         b = this->read();
+        i++;
       }
       ESP_LOGW("readTelegram", "Found STX byte %d", b);
       ESP_LOGW("readTelegram", "Interface status %d", this->available());
+      ESP_LOGW("readTelegram", "Bytes read before STX: %d", i);
 
       while (int len = this->available()) {
         ESP_LOGW("readTelegram", "Got %d bytes available to read", len);
