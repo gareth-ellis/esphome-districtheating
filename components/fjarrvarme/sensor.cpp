@@ -34,11 +34,13 @@ void FVSensor::setup() {
 
 void FVSensor::update() {
   if (millis() - timeLastRun > WAIT_TIME * 60000) {
-        sendDataCmd();
         int baud_rate = this->parent_->get_baud_rate();
+        sendDataCmd();
+        ESP_LOGW(TAG, "Changing baud rate from %d to 300", baud_rate);
         this->parent_->set_baud_rate(300);
         readTelegram();
         this->parent_->set_baud_rate(baud_rate);
+        ESP_LOGW(TAG, "Restoring baud rate to %d", baud_rate);
         timeLastRun = millis();
         ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
     }
@@ -104,15 +106,15 @@ void FVSensor::readTelegram() {
       // fast forward until we find the STX byte (start-of-text)
       uint8_t b = 0x00;
       int i=0;
-      while (this->available() && b != 0x02) {
-        b = this->read();
+      while (available() && b != 0x02) {
+        b = read();
         i++;
       }
       ESP_LOGW("readTelegram", "Found STX byte %d", b);
-      ESP_LOGW("readTelegram", "Interface status %d", this->available());
+      ESP_LOGW("readTelegram", "Interface status %d",available());
       ESP_LOGW("readTelegram", "Bytes read before STX: %d", i);
 
-      while (int len = this->available()) {
+      while (int len = available()) {
         ESP_LOGW("readTelegram", "Got %d bytes available to read", len);
         if (!read_array((uint8_t *) buffer, len))
                ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
