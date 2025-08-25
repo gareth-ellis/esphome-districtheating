@@ -103,12 +103,14 @@ void FVSensor::readTelegram() {
       while (this->available() && b != 0x02) {
         b = this->read();
       }
+      ESP_LOGW("readTelegram", "Found STX byte %d", b);
+      ESP_LOGW("readTelegram", "Interface status %d", this->available());
 
       while (int len = this->available()) {
-        ESP_LOGD("readTelegram", "Got %d bytes available to read", len);
+        ESP_LOGW("readTelegram", "Got %d bytes available to read", len);
         if (!read_array((uint8_t *) buffer, len))
                ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
-        ESP_LOGD("readTelegram", "Read %s", buffer);
+        ESP_LOGW("readTelegram", "Read %s", buffer);
 
         if (len > 0) {
           // end character reached
@@ -144,7 +146,7 @@ void FVSensor::readTelegram() {
         publishSensors(&parsed);
       }else{
         ESP_LOGW("readTelegram", "No valid sensor data to publish");
-        
+
       }
     }
 
