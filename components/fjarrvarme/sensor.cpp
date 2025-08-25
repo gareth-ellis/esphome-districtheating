@@ -35,12 +35,12 @@ void FVSensor::setup() {
 void FVSensor::update() {
   if (millis() - timeLastRun > WAIT_TIME * 60000) {
         int baud_rate = this->parent_->get_baud_rate();
-        sendDataCmd();
-        ESP_LOGW(TAG, "Changing baud rate from %d to 300", baud_rate);
         this->parent_->set_baud_rate(300);
-        readTelegram();
+        ESP_LOGW(TAG, "Changing baud rate from %d to 300", baud_rate);
+        sendDataCmd();
         this->parent_->set_baud_rate(baud_rate);
         ESP_LOGW(TAG, "Restoring baud rate to %d", baud_rate);
+        readTelegram();
         timeLastRun = millis();
         ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
     }
