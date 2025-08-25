@@ -100,11 +100,11 @@ void FVSensor::readTelegram() {
       bool publish=false;
       // fast forward until we find the STX byte (start-of-text)
       uint8_t b = 0x00;
-      while (available() && b != 0x02) {
-        b = read();
+      while (this->available() && b != 0x02) {
+        b = this->read();
       }
 
-      while (int len = available()) {
+      while (int len = this->available()) {
         ESP_LOGD("readTelegram", "Got %d bytes available to read", len);
         if (!read_array((uint8_t *) buffer, len))
                ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
@@ -130,6 +130,8 @@ void FVSensor::readTelegram() {
             obis_code = strtok_single(NULL, "(");
           }
          
+        }else{
+          ESP_LOGW("readTelegram", "Incomplete data received");
         }
 
         // clean buffer
@@ -140,6 +142,9 @@ void FVSensor::readTelegram() {
       if (publish == true) {
         ESP_LOGD("readTelegram", "Publishing sensor data");
         publishSensors(&parsed);
+      }else{
+        ESP_LOGW("readTelegram", "No valid sensor data to publish");
+        
       }
     }
 
