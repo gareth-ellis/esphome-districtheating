@@ -11,6 +11,8 @@ class ParsedMessage;
 
 class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UARTDevice {
  public:
+  void set_uart_rx(uart::UARTDevice *uart_rx) { uart_rx_ = uart_rx; }
+  void set_uart_tx(uart::UARTDevice *uart_tx) { uart_tx_ = uart_tx; }
   void setup() override;
   void update() override;
   void loop() override;
@@ -19,6 +21,10 @@ class FVSensor : public sensor::Sensor, public PollingComponent, public uart::UA
   void sendDataCmd();
   void parse_obis(char *str, char const *delimiters);
   void readTelegram();
+
+protected:
+  uart::UARTDevice *uart_rx_;
+  uart::UARTDevice *uart_tx_;
 
 };
 

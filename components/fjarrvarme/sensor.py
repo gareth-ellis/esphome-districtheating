@@ -20,10 +20,17 @@ CONFIG_SCHEMA = (
         unit_of_measurement=UNIT_KILOWATT_HOURS,
         device_class=DEVICE_CLASS_ENERGY,
     ).extend(cv.polling_component_schema("60s"))
-    .extend(uart.UART_DEVICE_SCHEMA)
+    .extend({
+        cv.Required("uart_in"): cv.use_id(uart.UARTComponent),
+        cv.Required("uart_out"): cv.use_id(uart.UARTComponent),
+    })
 )
 
 async def to_code(config):
     var = await sensor.new_sensor(config)
     await cg.register_component(var, config)
+    rx = await cg.get_variable(config["uart_in"])
+    tx = await cg.get_variable(config["uart_out"])
+    cg.add(var.set_uart_rx(rx))
+    cg.add(var.set_uart_tx(tx))
     await uart.register_uart_device(var, config)

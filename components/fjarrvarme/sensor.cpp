@@ -34,12 +34,7 @@ void FVSensor::setup() {
 
 void FVSensor::update() {
   if (millis() - timeLastRun > WAIT_TIME * 60000) {
-        int baud_rate = this->parent_->get_baud_rate();
-        this->parent_->set_baud_rate(300);
-        ESP_LOGW(TAG, "Changing baud rate from %d to 300", baud_rate);
         sendDataCmd();
-        this->parent_->set_baud_rate(baud_rate);
-        ESP_LOGW(TAG, "Restoring baud rate to %d", baud_rate);
         readTelegram();
         timeLastRun = millis();
         ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
@@ -62,7 +57,7 @@ void FVSensor::dump_config(){
 
 void FVSensor::sendDataCmd() {
   for (int i = 0; i < sizeof(data_cmd); i++) {
-    this->write_byte(data_cmd[i]);
+    uart_tx_->write_byte(data_cmd[i]);
   }
   ESP_LOGI("cmd", "data cmd sent");
 }
@@ -106,12 +101,12 @@ void FVSensor::readTelegram() {
       // fast forward until we find the STX byte (start-of-text)
       uint8_t b = 0x00;
       int i=0;
-      while (available() && b != 0x02) {
-        b = read();
+      while (uart_rx_->available() && b != 0x02) {
+        b = uart_rx_->read();
         i++;
       }
       ESP_LOGW("readTelegram", "Found STX byte %d", b);
-      ESP_LOGW("readTelegram", "Interface status %d",available());
+      ESP_LOGW("readTelegram", "Interface status %d",uart_rx_->available());
       ESP_LOGW("readTelegram", "Bytes read before STX: %d", i);
 
       while (int len = available()) {
