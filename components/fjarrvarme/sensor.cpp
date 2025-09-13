@@ -56,7 +56,7 @@ void FVSensor::set_cumulative_active_import(sensor::Sensor *cumulative_active_im
 void FVSensor::set_cumulative_volume(sensor::Sensor *cumulative_volume) {
   this->cumulative_volume = cumulative_volume;
 }
-  
+
 void FVSensor::publishSensors(ParsedMessage* parsed) {
   if (this->cumulative_active_import)
     this->cumulative_active_import->publish_state(parsed->cumulativeActiveImport);
@@ -127,6 +127,7 @@ void FVSensor::readTelegram() {
   ESP_LOGD(TAG, "Skipped %d bytes before STX (0x02)", preamble);
 
   while (int len = uart_rx_->available()) {
+    ESP_LOGD(TAG, "Reading %d bytes from UART.", len);
     if (!read_array(reinterpret_cast<uint8_t *>(buffer), len)) {
       ESP_LOGW(TAG, "Failed to read %d bytes from UART.", len);
       break;
