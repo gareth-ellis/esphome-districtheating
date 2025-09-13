@@ -163,5 +163,14 @@ void FVSensor::readTelegram() {
       }
     }
 
+bool FVSensor::read_array(uint8_t *buffer, int len) {
+  for (int i = 0; i < len; i++) {
+    if (!uart_rx_ || !uart_rx_->read_byte(&buffer[i])) {
+      return false;
+    }
+  }
+  return true;
+}
+
 }  // namespace fjarrvarme
 }  // namespace esphome
