@@ -1,6 +1,9 @@
 #include "sensor.h"
 #include "esphome/core/log.h"
 
+namespace esphome {
+namespace fjarrvarme {
+
 #define BUF_SIZE 100
 #define WAIT_TIME 1
 
@@ -12,41 +15,13 @@ uint8_t data_cmd[] = {
   '/',  '#' , '!', 0x0D, 0x0A
 };
 const char* DELIMITERS = "(*";
-unsigned long timeLastRun;
+unsigned long timeLastRun = 0;
 char buffer[BUF_SIZE];
-namespace esphome {
-namespace fjarrvarme {
 
 static const char *const TAG = "fjarrvarme.sensor";
 
-class ParsedMessage {
-  public:
-    double cumulativeActiveImport;
-    double cumulativeVolume;
-};
-
-class FVSensor : public esphome::Component {
-  public:
-    void setup() override;
-    void update();
-    void loop() override;
-    void dump_config() override;
-    void sendDataCmd();
-    void readTelegram();
-    void publishSensors(ParsedMessage* parsed);
-
-  private:
-    bool read_array(uint8_t *buffer, int len) {
-      for (int i = 0; i < len; i++) {
-        if (!this->uart_rx_->read_byte(reinterpret_cast<uint8_t*>(&buffer[i]))) {
-          return;
-        }
-      }
-      return true;
-    }
-    esphome::uart::UARTComponent *uart_tx_{nullptr};
-    esphome::uart::UARTComponent *uart_rx_{nullptr};
-};
+void FVSensor::set_uart_rx(uart::UARTComponent *uart_rx) { uart_rx_ = uart_rx; }
+void FVSensor::set_uart_tx(uart::UARTComponent *uart_tx) { uart_tx_ = uart_tx; }
 
 void FVSensor::setup() {
   // Serial.begin(115200);
@@ -101,7 +76,7 @@ void FVSensor::sendDataCmd() {
   ESP_LOGI("cmd", "data cmd sent");
 }
 
- char* strtok_single (char * str, char const * delims) {
+ char* FVSensor::strtok_single (char * str, char const * delims) {
       static char  * src = NULL;
       char  *  p,  * ret = 0;
       if (str != NULL)
@@ -119,7 +94,7 @@ void FVSensor::sendDataCmd() {
       return ret;
     }
 
-    void parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
+    void FVSensor::parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
       if (strncmp(obis_code, "6.8", 6) == 0) {
         parsed->cumulativeActiveImport = atof(value) * 1000;
 
@@ -148,10 +123,8 @@ void FVSensor::readTelegram() {
 
       while (int len = uart_rx_->available()) {
         if (!this->read_array((uint8_t *) buffer, len)) {
-        if (!read_array((uint8_t *) buffer, len))
-               ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
-        ESP_LOGW("readTelegram", "Read %s", buffer);
-
+          ESP_LOGW("readTelegram", "Read %s", buffer);
+        }
         if (len > 0) {
           // end character reached
           if (buffer[0] == '!') {
