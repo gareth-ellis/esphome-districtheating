@@ -7,13 +7,12 @@
 namespace esphome {
 namespace fjarrvarme {
 
-class ParsedMessage {
- public:
-  double cumulativeActiveImport;
-  double cumulativeVolume;
+struct ParsedMessage {
+  double cumulativeActiveImport = 0;
+  double cumulativeVolume = 0;
 };
 
-class FVSensor : public PollingComponent, public sensor::Sensor {
+class FVSensor : public PollingComponent {
  public:
   void set_uart_rx(uart::UARTComponent *uart_rx);
   void set_uart_tx(uart::UARTComponent *uart_tx);
@@ -25,14 +24,16 @@ class FVSensor : public PollingComponent, public sensor::Sensor {
   void sendDataCmd();
   void readTelegram();
   void publishSensors(ParsedMessage* parsed);
+  void parseRow(ParsedMessage* parsed, char* obis_code, char* value);
+  char* strtok_single(char *str, char const *delims);
+  bool read_array(uint8_t *buf, int len);
+
+  sensor::Sensor *cumulative_active_import = nullptr;
+  sensor::Sensor *cumulative_volume = nullptr;
 
  protected:
-  bool read_array(uint8_t *buffer, int len);
-  void parseRow(ParsedMessage* parsed, char* obis_code, char* value);
-  char* strtok_single(char * str, char const * delims);
-
-  uart::UARTComponent *uart_tx_{nullptr};
   uart::UARTComponent *uart_rx_{nullptr};
+  uart::UARTComponent *uart_tx_{nullptr};
 };
 
 }  // namespace fjarrvarme

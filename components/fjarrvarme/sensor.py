@@ -6,6 +6,7 @@ from esphome.const import (
     UNIT_CUBIC_METER,
     DEVICE_CLASS_ENERGY,
     STATE_CLASS_TOTAL_INCREASING,
+    CONF_ID,
 )
 
 DEPENDENCIES = ["uart"]
@@ -27,10 +28,13 @@ CONFIG_SCHEMA = (
 )
 
 async def to_code(config):
-    var = await sensor.new_sensor(config)
+    var = cg.new_Pvariable(config[CONF_ID])
     await cg.register_component(var, config)
     rx = await cg.get_variable(config["uart_in"])
     tx = await cg.get_variable(config["uart_out"])
     cg.add(var.set_uart_rx(rx))
     cg.add(var.set_uart_tx(tx))
-    #await uart.register_uart_device(var, config)
+    sens1 = await sensor.new_sensor(config["cumulative_active_import"])
+    cg.add(var.set_cumulative_active_import(sens1))
+    sens2 = await sensor.new_sensor(config["cumulative_volume"])
+    cg.add(var.set_cumulative_volume(sens2))

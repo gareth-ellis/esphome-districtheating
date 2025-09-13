@@ -4,168 +4,157 @@
 namespace esphome {
 namespace fjarrvarme {
 
-#define BUF_SIZE 100
-#define WAIT_TIME 1
-
-uint8_t data_cmd[] = { 
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  '/',  '#' , '!', 0x0D, 0x0A
-};
-const char* DELIMITERS = "(*";
-unsigned long timeLastRun = 0;
-char buffer[BUF_SIZE];
+constexpr size_t BUF_SIZE = 100;
+constexpr unsigned long WAIT_TIME_MIN = 1;
 
 static const char *const TAG = "fjarrvarme.sensor";
+
+uint8_t data_cmd[] = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  '/', '#', '!', 0x0D, 0x0A
+};
+
+unsigned long last_run = 0;
+char buffer[BUF_SIZE];
 
 void FVSensor::set_uart_rx(uart::UARTComponent *uart_rx) { uart_rx_ = uart_rx; }
 void FVSensor::set_uart_tx(uart::UARTComponent *uart_tx) { uart_tx_ = uart_tx; }
 
 void FVSensor::setup() {
-  // Serial.begin(115200);
-  // pinMode(RX_PIN, INPUT);
-  // pinMode(TX_PIN, OUTPUT);
-  ESP_LOGI(TAG, "Starting sensor...");
-
+  ESP_LOGI(TAG, "Sensor initialization complete.");
 }
 
 void FVSensor::update() {
-  if (millis() - timeLastRun > WAIT_TIME * 60000) {
-        sendDataCmd();
-        readTelegram();
-        timeLastRun = millis();
-        ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
+  if (millis() - last_run > WAIT_TIME_MIN * 60000) {
+    if (uart_tx_ != nullptr) {
+      sendDataCmd();
+    } else {
+      ESP_LOGW(TAG, "TX UART not set, cannot send command.");
     }
-
-
-  // Example: Read using RX UART
-  if (uart_rx_ != nullptr) {
-    std::string line;
-    while (uart_rx_->available()) {
-      uint8_t c;
-      uart_rx_->read_byte(&c);
-      if (c == '\n') {
-        ESP_LOGD(TAG, "Received: %s", line.c_str());
-        line.clear();
-      } else {
-        line += c;
-      }
+    if (uart_rx_ != nullptr) {
+      readTelegram();
+    } else {
+      ESP_LOGW(TAG, "RX UART not set, cannot read telegram.");
     }
+    last_run = millis();
+    ESP_LOGI(TAG, "Cycle complete at %lu ms", last_run);
   }
 }
 
 void FVSensor::loop() {
-
+  // No periodic background work needed here.
 }
 
 void FVSensor::publishSensors(ParsedMessage* parsed) {
-  ESP_LOGI(TAG, "Publishing sensor: 6.8 = %f", parsed->cumulativeActiveImport);
-  ESP_LOGI(TAG, "Publishing sensor: 6.26 = %f", parsed->cumulativeVolume);
+  if (this->cumulative_active_import)
+    this->cumulative_active_import->publish_state(parsed->cumulativeActiveImport);
+  if (this->cumulative_volume)
+    this->cumulative_volume->publish_state(parsed->cumulativeVolume);
+
+  ESP_LOGI(TAG, "Published: Energy=%.2f, Volume=%.6f", parsed->cumulativeActiveImport, parsed->cumulativeVolume);
 }
 
-void FVSensor::dump_config(){
-    ESP_LOGCONFIG(TAG, "Fjärrvärmesensor");
+void FVSensor::dump_config() {
+  ESP_LOGCONFIG(TAG, "Fjärrvärmesensor configuration loaded.");
 }
 
 void FVSensor::sendDataCmd() {
-  for (int i = 0; i < sizeof(data_cmd); i++) {
+  if (!uart_tx_) {
+    ESP_LOGW(TAG, "TX UART not available for sending command.");
+    return;
+  }
+  for (size_t i = 0; i < sizeof(data_cmd); i++) {
     uart_tx_->write_byte(data_cmd[i]);
   }
-  ESP_LOGI("cmd", "data cmd sent");
+  ESP_LOGI(TAG, "Command sent to meter.");
 }
 
- char* FVSensor::strtok_single (char * str, char const * delims) {
-      static char  * src = NULL;
-      char  *  p,  * ret = 0;
-      if (str != NULL)
-        src = str;
-      if (src == NULL)
-        return NULL;
-      if ((p = strpbrk (src, delims)) != NULL) {
-        *p  = 0;
-        ret = src;
-        src = ++p;
-      } else if (*src) {
-        ret = src;
-        src = NULL;
-      }
-      return ret;
-    }
+char* FVSensor::strtok_single(char *str, char const *delims) {
+  static char *src = nullptr;
+  char *p, *ret = nullptr;
+  if (str != nullptr)
+    src = str;
+  if (src == nullptr)
+    return nullptr;
+  p = strpbrk(src, delims);
+  if (p != nullptr) {
+    *p = 0;
+    ret = src;
+    src = ++p;
+  } else if (*src) {
+    ret = src;
+    src = nullptr;
+  }
+  return ret;
+}
 
-    void FVSensor::parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
-      if (strncmp(obis_code, "6.8", 6) == 0) {
-        parsed->cumulativeActiveImport = atof(value) * 1000;
-
-      } else if (strncmp(obis_code, "6.26", 6) == 0) {
-        parsed->cumulativeVolume = atof(value);
-
-      }
-    }
-
+void FVSensor::parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
+  if (strncmp(obis_code, "6.8", 6) == 0) {
+    parsed->cumulativeActiveImport = atof(value) * 1000;
+  } else if (strncmp(obis_code, "6.26", 6) == 0) {
+    parsed->cumulativeVolume = atof(value);
+  }
+}
 
 void FVSensor::readTelegram() {
+  if (!uart_rx_) {
+    ESP_LOGW(TAG, "RX UART not available for reading.");
+    return;
+  }
 
-  ParsedMessage parsed = ParsedMessage();
-      
-      bool publish=false;
-      // fast forward until we find the STX byte (start-of-text)
-      uint8_t b = 0x00;
-      int i=0;
-      while (uart_rx_->available() && b != 0x02) {
-        uart_rx_->read_byte(&b);
-        i++;
-      }
-      ESP_LOGW("readTelegram", "Found STX byte %d", b);
-      ESP_LOGW("readTelegram", "Interface status %d",uart_rx_->available());
-      ESP_LOGW("readTelegram", "Bytes read before STX: %d", i);
+  ParsedMessage parsed{};
+  bool should_publish = false;
+  uint8_t byte = 0x00;
+  int preamble = 0;
 
-      while (int len = uart_rx_->available()) {
-        if (!this->read_array((uint8_t *) buffer, len)) {
-          ESP_LOGW("readTelegram", "Read %s", buffer);
-        }
-        if (len > 0) {
-          // end character reached
-          if (buffer[0] == '!') {
-            publishSensors(&parsed);
-            return;
-          }
+  // Skip until start-of-text (STX)
+  while (uart_rx_->available() && byte != 0x02) {
+    uart_rx_->read_byte(&byte);
+    preamble++;
+  }
+  ESP_LOGD(TAG, "Skipped %d bytes before STX (0x02)", preamble);
 
-          char* obis_code = strtok_single(buffer, "(");
-          while (obis_code != NULL) {
-            char* value = strtok_single(NULL, "*)");
-            char* unit = strtok_single(NULL, "*)");
-            
-            if (value != NULL) {
-              //ESP_LOGI("data", "%s=[%s]", obis_code, value);
-              parseRow(&parsed, obis_code, value);
-              publish=true;
-            }
-            obis_code = strtok_single(NULL, "(");
-          }
-         
-        }else{
-          ESP_LOGW("readTelegram", "Incomplete data received");
-        }
-
-        // clean buffer
-        memset(buffer, 0, BUF_SIZE - 1);
-
-      }
-
-      if (publish == true) {
-        ESP_LOGD("readTelegram", "Publishing sensor data");
-        publishSensors(&parsed);
-      }else{
-        ESP_LOGW("readTelegram", "No valid sensor data to publish");
-
-      }
+  while (int len = uart_rx_->available()) {
+    if (!read_array(reinterpret_cast<uint8_t *>(buffer), len)) {
+      ESP_LOGW(TAG, "Failed to read %d bytes from UART.", len);
+      break;
     }
+    if (len > 0) {
+      if (buffer[0] == '!') {
+        publishSensors(&parsed);
+        return;
+      }
+      char* obis_code = strtok_single(buffer, "(");
+      while (obis_code != nullptr) {
+        char* value = strtok_single(nullptr, "*)");
+        strtok_single(nullptr, "*)"); // skip unit
+        if (value != nullptr) {
+          parseRow(&parsed, obis_code, value);
+          should_publish = true;
+        }
+        obis_code = strtok_single(nullptr, "(");
+      }
+    } else {
+      ESP_LOGW(TAG, "No data received from UART.");
+    }
+    memset(buffer, 0, BUF_SIZE);
+  }
 
-bool FVSensor::read_array(uint8_t *buffer, int len) {
+  if (should_publish) {
+    ESP_LOGD(TAG, "Publishing parsed sensor data.");
+    publishSensors(&parsed);
+  } else {
+    ESP_LOGW(TAG, "No valid sensor data to publish.");
+  }
+}
+
+bool FVSensor::read_array(uint8_t *buf, int len) {
+  if (!uart_rx_) return false;
   for (int i = 0; i < len; i++) {
-    if (!uart_rx_ || !uart_rx_->read_byte(&buffer[i])) {
+    if (!uart_rx_->read_byte(&buf[i])) {
       return false;
     }
   }
