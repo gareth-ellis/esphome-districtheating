@@ -48,6 +48,15 @@ void FVSensor::loop() {
   // No periodic background work needed here.
 }
 
+
+void FVSensor::set_cumulative_active_import(sensor::Sensor *cumulative_active_import) {
+  this->cumulative_active_import = cumulative_active_import;
+}
+
+void FVSensor::set_cumulative_volume(sensor::Sensor *cumulative_volume) {
+  this->cumulative_volume = cumulative_volume;
+}
+  
 void FVSensor::publishSensors(ParsedMessage* parsed) {
   if (this->cumulative_active_import)
     this->cumulative_active_import->publish_state(parsed->cumulativeActiveImport);

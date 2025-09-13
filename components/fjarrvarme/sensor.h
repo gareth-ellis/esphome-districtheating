@@ -20,6 +20,8 @@ class FVSensor : public PollingComponent {
   void setup() override;
   void update() override;
   void loop() override;
+  void set_cumulative_active_import(sensor::Sensor *cumulative_active_import);
+  void set_cumulative_volume(sensor::Sensor *cumulative_volume);
   void dump_config() override;
   void sendDataCmd();
   void readTelegram();
