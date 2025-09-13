@@ -33,4 +33,4 @@ async def to_code(config):
     tx = await cg.get_variable(config["uart_out"])
     cg.add(var.set_uart_rx(rx))
     cg.add(var.set_uart_tx(tx))
-    await uart.register_uart_device(var, config)
+    #await uart.register_uart_device(var, config)

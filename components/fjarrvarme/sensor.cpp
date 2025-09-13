@@ -1,5 +1,6 @@
-#include "esphome/core/log.h"
 #include "sensor.h"
+#include "esphome/core/log.h"
+
 #define BUF_SIZE 100
 #define WAIT_TIME 1
 
@@ -16,12 +17,35 @@ char buffer[BUF_SIZE];
 namespace esphome {
 namespace fjarrvarme {
 
-static const char *TAG = "fjarrvarme.sensor";
+static const char *const TAG = "fjarrvarme.sensor";
 
 class ParsedMessage {
   public:
     double cumulativeActiveImport;
     double cumulativeVolume;
+};
+
+class FVSensor : public esphome::Component {
+  public:
+    void setup() override;
+    void update();
+    void loop() override;
+    void dump_config() override;
+    void sendDataCmd();
+    void readTelegram();
+    void publishSensors(ParsedMessage* parsed);
+
+  private:
+    bool read_array(uint8_t *buffer, int len) {
+      for (int i = 0; i < len; i++) {
+        if (!this->uart_rx_->read_byte(reinterpret_cast<uint8_t*>(&buffer[i]))) {
+          return;
+        }
+      }
+      return true;
+    }
+    esphome::uart::UARTComponent *uart_tx_{nullptr};
+    esphome::uart::UARTComponent *uart_rx_{nullptr};
 };
 
 void FVSensor::setup() {
@@ -40,6 +64,21 @@ void FVSensor::update() {
         ESP_LOGI(TAG, "Data sent %lu", timeLastRun);
     }
 
+
+  // Example: Read using RX UART
+  if (uart_rx_ != nullptr) {
+    std::string line;
+    while (uart_rx_->available()) {
+      uint8_t c;
+      uart_rx_->read_byte(&c);
+      if (c == '\n') {
+        ESP_LOGD(TAG, "Received: %s", line.c_str());
+        line.clear();
+      } else {
+        line += c;
+      }
+    }
+  }
 }
 
 void FVSensor::loop() {
@@ -61,8 +100,6 @@ void FVSensor::sendDataCmd() {
   }
   ESP_LOGI("cmd", "data cmd sent");
 }
-
-
 
  char* strtok_single (char * str, char const * delims) {
       static char  * src = NULL;
@@ -102,15 +139,15 @@ void FVSensor::readTelegram() {
       uint8_t b = 0x00;
       int i=0;
       while (uart_rx_->available() && b != 0x02) {
-        b = uart_rx_->read();
+        uart_rx_->read_byte(&b);
         i++;
       }
       ESP_LOGW("readTelegram", "Found STX byte %d", b);
       ESP_LOGW("readTelegram", "Interface status %d",uart_rx_->available());
       ESP_LOGW("readTelegram", "Bytes read before STX: %d", i);
 
-      while (int len = available()) {
-        ESP_LOGW("readTelegram", "Got %d bytes available to read", len);
+      while (int len = uart_rx_->available()) {
+        if (!this->read_array((uint8_t *) buffer, len)) {
         if (!read_array((uint8_t *) buffer, len))
                ESP_LOGW("readTelegram", "read_array() returned false, meter reading may be incomplete");
         ESP_LOGW("readTelegram", "Read %s", buffer);
