@@ -58,11 +58,10 @@ void FVSensor::set_cumulative_volume(sensor::Sensor *cumulative_volume) {
 }
 
 void FVSensor::publishSensors(ParsedMessage* parsed) {
-  if (this->cumulative_active_import)
+  if (parsed->cumulativeActiveImport) 
     this->cumulative_active_import->publish_state(parsed->cumulativeActiveImport);
-  if (this->cumulative_volume)
+  if (parsed->cumulativeVolume)
     this->cumulative_volume->publish_state(parsed->cumulativeVolume);
-
   ESP_LOGI(TAG, "Published: Energy=%.2f, Volume=%.6f", parsed->cumulativeActiveImport, parsed->cumulativeVolume);
 }
 
