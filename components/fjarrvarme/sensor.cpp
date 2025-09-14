@@ -117,15 +117,18 @@ std::string FVSensor::readLine() {
 
   std::string line;
   uint8_t byte = 0x00;
-
+  int i = 0;
   // Read until newline character
   while (uart_rx_->available()) {
     uart_rx_->read_byte(&byte);
+    i++;
     if (byte == '\n') {
+      ESP_LOGD(TAG, "Newline character received.");
       break;
     }
     line += static_cast<char>(byte);
   }
+  ESP_LOGD(TAG, "Read %d bytes from UART before newline or break.", i);
   return line;
 }
 
