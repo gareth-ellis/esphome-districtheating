@@ -75,6 +75,7 @@ void FVSensor::sendDataCmd() {
     ESP_LOGW(TAG, "TX UART not available for sending command.");
     return;
   }
+  uart_tx_->set_baud_rate(300);
   for (size_t i = 0; i < sizeof(data_cmd); i++) {
     uart_tx_->write_byte(data_cmd[i]);
   }
@@ -120,12 +121,15 @@ void FVSensor::readTelegram() {
   int preamble = 0;
 
   // Skip until start-of-text (STX)
-  while (uart_rx_->available() && byte != 0x02) {
+  std::string line;
+  while (uart_rx_->available()) {
     uart_rx_->read_byte(&byte);
-    ESP_LOGW(TAG, "Skipping byte: 0x%02X", byte);
-    preamble++;
+    if (byte == '\n') {
+      break;
+    }
+    line += static_cast<char>(byte);
   }
-  ESP_LOGD(TAG, "Skipped %d bytes before STX (0x02)", preamble);
+  uart_rx_->set_baud_rate(2400);
 
   while (int len = uart_rx_->available()) {
     ESP_LOGD(TAG, "Reading %d bytes from UART.", len);
