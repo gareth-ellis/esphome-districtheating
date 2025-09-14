@@ -140,9 +140,8 @@ void FVSensor::readTelegram() {
 
   ParsedMessage parsed{};
   bool should_publish = false;
-  uint8_t byte = 0x00;
   int preamble = 0;
-
+  delay(500);
   // Skip until start-of-text (STX)
   std::string line = this->readLine();
   ESP_LOGD(TAG, "Preamble: %s", line.c_str());
