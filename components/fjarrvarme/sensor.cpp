@@ -128,6 +128,7 @@ void FVSensor::readTelegram() {
     }
     line += static_cast<char>(byte);
   }
+  ESP_LOGD(TAG, "Preamble: %s", line.c_str());
   uart_rx_->set_baud_rate(2400);
 
   while (int len = uart_rx_->available()) {
