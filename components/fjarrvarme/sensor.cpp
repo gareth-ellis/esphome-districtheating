@@ -1,5 +1,6 @@
 #include "sensor.h"
 #include "esphome/core/log.h"
+#include <string>
 
 namespace esphome {
 namespace fjarrvarme {
@@ -108,6 +109,26 @@ void FVSensor::parseRow(ParsedMessage* parsed, char* obis_code, char* value) {
   }
 }
 
+std::string FVSensor::readLine() {
+  if (!uart_rx_) {
+    ESP_LOGW(TAG, "RX UART not available for reading.");
+    return "";
+  }
+
+  std::string line;
+  uint8_t byte = 0x00;
+
+  // Read until newline character
+  while (uart_rx_->available()) {
+    uart_rx_->read_byte(&byte);
+    if (byte == '\n') {
+      break;
+    }
+    line += static_cast<char>(byte);
+  }
+  return line;
+}
+
 void FVSensor::readTelegram() {
   if (!uart_rx_) {
     ESP_LOGW(TAG, "RX UART not available for reading.");
@@ -120,14 +141,7 @@ void FVSensor::readTelegram() {
   int preamble = 0;
 
   // Skip until start-of-text (STX)
-  std::string line;
-  while (uart_rx_->available()) {
-    uart_rx_->read_byte(&byte);
-    if (byte == '\n') {
-      break;
-    }
-    line += static_cast<char>(byte);
-  }
+  std::string line = this->readLine();
   ESP_LOGD(TAG, "Preamble: %s", line.c_str());
   uart_rx_->set_baud_rate(2400);
 

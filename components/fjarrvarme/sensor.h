@@ -27,7 +27,8 @@ class FVSensor : public PollingComponent {
   void readTelegram();
   void publishSensors(ParsedMessage* parsed);
   void parseRow(ParsedMessage* parsed, char* obis_code, char* value);
-  char* strtok_single(char *str, char const *delims);
+  std::string readLine();
+  char *strtok_single(char *str, char const *delims);
   bool read_array(uint8_t *buf, int len);
 
   sensor::Sensor *cumulative_active_import = nullptr;
