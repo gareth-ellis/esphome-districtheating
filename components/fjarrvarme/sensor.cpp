@@ -122,6 +122,7 @@ void FVSensor::readTelegram() {
   // Skip until start-of-text (STX)
   while (uart_rx_->available() && byte != 0x02) {
     uart_rx_->read_byte(&byte);
+    ESP_LOGW(TAG, "Skipping byte: 0x%02X", byte);
     preamble++;
   }
   ESP_LOGD(TAG, "Skipped %d bytes before STX (0x02)", preamble);
